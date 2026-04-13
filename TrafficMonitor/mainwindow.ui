@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1091</width>
+    <height>522</height>
+   </rect>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>1091</width>
+    <height>522</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">background-color: #333333;</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>16777215</width>
+     <height>16777215</height>
+    </size>
+   </property>
+   <property name="styleSheet">
+    <string notr="true"/>
+   </property>
+   <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,0">
+    <property name="spacing">
+     <number>0</number>
+    </property>
+    <item>
+     <layout class="QVBoxLayout" name="verticalLayout" stretch="2">
+      <property name="spacing">
+       <number>0</number>
+      </property>
+      <item>
+       <widget class="QWidget" name="frm_list_wrapper" native="true">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>300</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>300</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true"/>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_2" rowstretch="2,0,0">
+         <property name="leftMargin">
+          <number>2</number>
+         </property>
+         <property name="topMargin">
+          <number>2</number>
+         </property>
+         <property name="rightMargin">
+          <number>2</number>
+         </property>
+         <property name="bottomMargin">
+          <number>2</number>
+         </property>
+         <property name="horizontalSpacing">
+          <number>2</number>
+         </property>
+         <item row="2" column="0">
+          <widget class="MyTableWidget" name="tableWidget">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">background-color:#606060;
+font:8pt &quot;SimSun&quot;;
+border-color: rgb(92,92,92);
+</string>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::Box</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Plain</enum>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
+          <widget class="state_panel" name="panelWrap" native="true">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>120</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>120</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="list_name">
+           <property name="styleSheet">
+            <string notr="true">color:#EEEEEE;
+thick:3;
+font-size: 13px;
+
+</string>
+           </property>
+           <property name="text">
+            <string>检测记录</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="MainDisplayArea" stretch="5,5">
+      <item>
+       <widget class="QFrame" name="frm_play_rgn">
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">color:rgb(80,234,44);border: 1px solid rgb(92,92,92);background-color: rgb(32,32,32)</string>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::StyledPanel</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Sunken</enum>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="DeviceLogWnd" name="textLog">
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">color:rgb(0,255,66);border: 1px solid rgb(92,92,92);background-color: rgb(80,80,80)</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1091</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">background-color: #212121;
+color:rgb(255, 255, 255);
+</string>
+   </property>
+   <widget class="QMenu" name="menu">
+    <property name="styleSheet">
+     <string notr="true">background-color: #90909090;</string>
+    </property>
+    <property name="title">
+     <string>管理</string>
+    </property>
+    <addaction name="signupAction"/>
+    <addaction name="separator"/>
+    <addaction name="detectAction"/>
+    <addaction name="separator"/>
+    <addaction name="paramsetAction"/>
+    <addaction name="networkAction"/>
+    <addaction name="separator"/>
+    <addaction name="restartDevice"/>
+    <addaction name="separator"/>
+   </widget>
+   <widget class="QMenu" name="menu_tool">
+    <property name="title">
+     <string>工具</string>
+    </property>
+    <addaction name="clientSettingAction"/>
+    <addaction name="IpSearchAction"/>
+   </widget>
+   <widget class="QMenu" name="menu_log">
+    <property name="title">
+     <string>日志</string>
+    </property>
+    <addaction name="logView"/>
+    <addaction name="logSetting"/>
+   </widget>
+   <addaction name="menu"/>
+   <addaction name="menu_tool"/>
+   <addaction name="menu_log"/>
+  </widget>
+  <action name="login_device">
+   <property name="text">
+    <string>注册</string>
+   </property>
+  </action>
+  <action name="login_camera">
+   <property name="text">
+    <string>摄像头管理</string>
+   </property>
+  </action>
+  <action name="action_3">
+   <property name="text">
+    <string>保存为</string>
+   </property>
+  </action>
+  <action name="signupAction">
+   <property name="text">
+    <string>注册</string>
+   </property>
+  </action>
+  <action name="detectAction">
+   <property name="text">
+    <string>检测...</string>
+   </property>
+  </action>
+  <action name="networkAction">
+   <property name="text">
+    <string>网路...</string>
+   </property>
+  </action>
+  <action name="restartDevice">
+   <property name="text">
+    <string>重启</string>
+   </property>
+  </action>
+  <action name="IpSearchAction">
+   <property name="text">
+    <string>主板IP搜索</string>
+   </property>
+  </action>
+  <action name="paramsetAction">
+   <property name="text">
+    <string>辅助参数</string>
+   </property>
+  </action>
+  <action name="clientSettingAction">
+   <property name="text">
+    <string>客户端设置</string>
+   </property>
+  </action>
+  <action name="logSetting">
+   <property name="text">
+    <string>日志设置</string>
+   </property>
+  </action>
+  <action name="logView">
+   <property name="text">
+    <string>打开日志...</string>
+   </property>
+  </action>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>state_panel</class>
+   <extends>QWidget</extends>
+   <header location="global">state_panel.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>DeviceLogWnd</class>
+   <extends>QPlainTextEdit</extends>
+   <header location="global">devicelogwnd.h</header>
+  </customwidget>
+  <customwidget>
+   <class>MyTableWidget</class>
+   <extends>QTableWidget</extends>
+   <header location="global">mytablewidget.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

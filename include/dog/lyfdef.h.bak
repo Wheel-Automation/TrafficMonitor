@@ -1,0 +1,9 @@
+#ifndef __LYF_DEF_H__
+#define __LYF_DEF_H__
+
+#define LIMIT_TYPE_COUNT				1			// 期限类型为计次
+#define LIMIT_TYPE_LENGTH				2			// 期限类型时间长度
+#define LIMIT_TYPE_QUANTUM				3			// 期限类型为时间段
+
+///////////////////////////////////////////////////////////////////////////////
+#endif //__LYF_DEF_H__

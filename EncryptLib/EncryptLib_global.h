@@ -1,0 +1,12 @@
+#ifndef ENCRYPTLIB_GLOBAL_H
+#define ENCRYPTLIB_GLOBAL_H
+
+#include <QtCore/qglobal.h>
+
+#if defined(ENCRYPTLIB_LIBRARY)
+#  define ENCRYPTLIB_EXPORT Q_DECL_EXPORT
+#else
+#  define ENCRYPTLIB_EXPORT Q_DECL_IMPORT
+#endif
+
+#endif // ENCRYPTLIB_GLOBAL_H

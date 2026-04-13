@@ -1,0 +1,45 @@
+long shieldPC( long nRandom, unsigned short key1, unsigned short key2, unsigned short key3, unsigned short key4 )
+{
+	unsigned long ReTurnData;
+
+	unsigned short int y,y1,y2,x1,x2,y11,y22;
+	unsigned short int outdata1,outdata2;
+	//outdata2 = //保存X的高16位
+	outdata2 = (unsigned short int)((nRandom & 0xffff0000) >> 16);
+	outdata1 = (unsigned short int)(0xffff & nRandom); //保存X的低16位
+	x1=outdata1;
+	x2=outdata2;
+	y1 = (unsigned short int)(x1 ^ key2);
+	y11 = (unsigned short int)(x2 ^ key1);
+
+	y1 = y1 + y11;
+	if (y1 > 32767)
+		y1 = y1 - 32767;
+
+	y1 = (unsigned short int)(y1 ^ 16) ;
+	if (y1 > 32767)
+		y1 = y1 - 32767;
+
+	y1 = (unsigned short int)(y1 % key4);
+	y = (unsigned short int)(y1 ^ key3);
+	if (y > 50000)
+		y = y - 50000-1;
+
+	y11 = x1 + key1;
+	if (y11 > 32767)
+		y11 = y11 - 32767;
+
+	y22 = (unsigned short int)(y11 % key3);
+	y11 = (unsigned short int)(key4 ^ x2);
+	y2 = y22 ^ y11;
+
+	if (y2 > 50000)
+		y2 = y2 - 50000-1;
+	y = y ^ y2;
+
+	ReTurnData = y2;
+
+	ReTurnData = ReTurnData << 16; //返回的数据为y2和y拼成的长整型数据
+	ReTurnData = ReTurnData ^ y;
+	return(ReTurnData);
+}

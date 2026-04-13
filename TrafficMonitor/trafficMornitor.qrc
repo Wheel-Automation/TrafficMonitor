@@ -1,0 +1,15 @@
+<RCC>
+    <qresource prefix="/">
+        <file>asset/left_arrow.png</file>
+        <file>asset/right_arrow.png</file>
+        <file>asset/bad.png</file>
+        <file>asset/normal.png</file>
+        <file>asset/play.png</file>
+        <file>asset/stop.png</file>
+        <file>asset/connected.png</file>
+        <file>asset/disconnect.png</file>
+        <file>asset/off.png</file>
+        <file>asset/on.png</file>
+        <file>asset/demo.ico</file>
+    </qresource>
+</RCC>
