@@ -36,6 +36,7 @@ private slots:
 
 
 private:
+    bool modifyHisiIpBySearchSdk(const QString &user, const QString &pwd);
     void InitUI();
     void show_ip();
     bool login_device();

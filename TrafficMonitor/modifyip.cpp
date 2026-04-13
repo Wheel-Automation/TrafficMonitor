@@ -1,6 +1,11 @@
 #include <QDebug>
 #include <QTimer>
+#include <QThread>
+#include <QElapsedTimer>
+#include <QCoreApplication>
 #include <QCloseEvent>
+#include <cstring>
+// #include <Windows.h>
 #include "macro.h"
 #include "DevSearchSDK.h"
 #include "utils.h"
@@ -17,10 +22,68 @@
 #define SET_NETCFG_FAILED   "错误：更新网络设置失败"
 #define SET_NETCFG_SUCCESS  "更新网络设置成功"
 
+namespace {
+struct HisiSearchContext {
+    QString targetIp;
+    NET_DEV_SADPINFO sadpInfo;
+    bool found;
+};
+
+int hisiModifySearchCb(const NET_DEV_SADPINFO *sadpInfo, void *userParam)
+{
+    qDebug()<<"Haisi modify IP callback function is called";
+    if (sadpInfo == nullptr || userParam == nullptr) {
+        qDebug() << "Invalid sadp infor or invalid user parameters";
+        return 0;
+    }
+
+    HisiSearchContext *ctx = reinterpret_cast<HisiSearchContext *>(userParam);
+    const char *devIp = sadpInfo->WifiNIC.EnableWifi ? sadpInfo->WifiNIC.NicCfg.IPAddr.IpV4
+                                                     : sadpInfo->EthCfg.EthNICs[0].IPAddr.IpV4;
+    if (ctx->targetIp != QString::fromUtf8(devIp)) {
+        qDebug() << "Target IP isn't matched";
+        return 0;
+    }
+
+    memcpy_s(&ctx->sadpInfo, sizeof(ctx->sadpInfo), sadpInfo, sizeof(NET_DEV_SADPINFO));
+    ctx->found = true;
+    qDebug() << "Success to change IP address";
+    return 0;
+}
+
+typedef int (DEVSEARCH_CALL *GsfSetInfoFn)(const NET_DEV_MODIFY_NET *Param, BOOL bSync);
+
+GsfSetInfoFn resolveSetInfoProc()
+{
+    static GsfSetInfoFn setInfoProc = nullptr;
+    static bool triedResolve = false;
+    if (triedResolve) {
+        return setInfoProc;
+    }
+    triedResolve = true;
+
+    HMODULE sdkModule = GetModuleHandleA("DevSearchSDK.dll");
+    if (sdkModule == nullptr) {
+        sdkModule = LoadLibraryA("DevSearchSDK.dll");
+    }
+    if (sdkModule == nullptr) {
+        qDebug() << "failed to load DevSearchSDK.dll";
+        return nullptr;
+    }
+
+    setInfoProc = reinterpret_cast<GsfSetInfoFn>(GetProcAddress(sdkModule, "GSF_DEV_SEARCH_SET_INFO"));
+    if (setInfoProc == nullptr) {
+        qDebug() << "GSF_DEV_SEARCH_SET_INFO is not exported by current sdk dll";
+    }
+    return setInfoProc;
+}
+}
+
 ModifyIP::ModifyIP(QWidget *parent, IP_SET ipsets, uint8_t camType) :
     QDialog(parent),
     ui(new Ui::ModifyIP),
-    _camType(camType)
+    _camType(camType),
+    _cgiClient(nullptr)
 {
     ui->setupUi(this);
     _dev_ip = ipsets.ip;
@@ -36,10 +99,7 @@ ModifyIP::ModifyIP(QWidget *parent, IP_SET ipsets, uint8_t camType) :
         // connect slot
         connect(_cgiClient, &CgiClient::requestFinished, this, &ModifyIP::on_cgi_requestFinished);
         connect(_cgiClient, &CgiClient::requestError, this, &ModifyIP::on_cgi_requestFailed);
-
     }
-
-
  }
 
 
@@ -240,30 +300,87 @@ EthernetInfo ModifyIP::parseEthernetResponse(const QString &response)
     return info;
 }
 
+bool ModifyIP::modifyHisiIpBySearchSdk(const QString &user, const QString &pwd)
+{
+    if (GSF_DEV_SEARCH_INIT() != 0) {
+        qDebug() << "failed to initialize search sdk";
+        return false;
+    }
+
+    bool success = false;
+    HisiSearchContext ctx;
+    memset(&ctx.sadpInfo, 0, sizeof(ctx.sadpInfo));
+    ctx.targetIp = _dev_ip;
+    ctx.found = false;
+
+    GSF_DevSearchParam param;
+    ZeroMemory(&param, sizeof(param));
+    param.Callback = hisiModifySearchCb;
+    param.UserParam = &ctx;
+
+    int startRet = GSF_DEV_SEARCH_START(&param);
+    if (startRet != 0) {
+        qDebug() << "failed to start hisi search. ret =" << startRet;
+        GSF_DEV_SEARCH_UNINIT();
+        return false;
+    }
+
+    QElapsedTimer timer;
+    timer.start();
+    while (!ctx.found && timer.elapsed() < 5000) {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
+        QThread::msleep(100);
+    }
+    GSF_DEV_SEARCH_STOP();
+
+    if (!ctx.found) {
+        qDebug() << "target hisi device not found by local search" << _dev_ip;
+        GSF_DEV_SEARCH_UNINIT();
+        return false;
+    }
+
+    NET_DEV_MODIFY_NET netCfg;
+    ZeroMemory(&netCfg, sizeof(netCfg));
+    memcpy_s(netCfg.SadpID, sizeof(netCfg.SadpID), ctx.sadpInfo.SadpID, sizeof(ctx.sadpInfo.SadpID));
+    memcpy_s(&netCfg.EthCfg, sizeof(netCfg.EthCfg), &ctx.sadpInfo.EthCfg, sizeof(ctx.sadpInfo.EthCfg));
+    memcpy_s(&netCfg.WifiNIC, sizeof(netCfg.WifiNIC), &ctx.sadpInfo.WifiNIC, sizeof(ctx.sadpInfo.WifiNIC));
+    memcpy_s(&netCfg.ServiceCfg, sizeof(netCfg.ServiceCfg), &ctx.sadpInfo.ServiceCfg, sizeof(ctx.sadpInfo.ServiceCfg));
+    netCfg.ProtolType = ctx.sadpInfo.ProtolType;
+
+    std::string userStd = user.toStdString();
+    std::string pwdStd = pwd.toStdString();
+    strncpy_s(netCfg.UserName, sizeof(netCfg.UserName), userStd.c_str(), _TRUNCATE);
+    strncpy_s(netCfg.Passwd, sizeof(netCfg.Passwd), pwdStd.c_str(), _TRUNCATE);
+    if (netCfg.EthCfg.NICCount == 0) {
+        netCfg.EthCfg.NICCount = 1;
+    }
+    strncpy_s(netCfg.EthCfg.EthNICs[0].IPAddr.IpV4, sizeof(netCfg.EthCfg.EthNICs[0].IPAddr.IpV4), _ip->getStdIP().c_str(), _TRUNCATE);
+    strncpy_s(netCfg.EthCfg.EthNICs[0].Netmask.IpV4, sizeof(netCfg.EthCfg.EthNICs[0].Netmask.IpV4), _ip_mask->getStdIP().c_str(), _TRUNCATE);
+    strncpy_s(netCfg.EthCfg.EthNICs[0].Gateway.IpV4, sizeof(netCfg.EthCfg.EthNICs[0].Gateway.IpV4), _ip_gateway->getStdIP().c_str(), _TRUNCATE);
+    strncpy_s(netCfg.EthCfg.EthNICs[0].DNS1.IpV4, sizeof(netCfg.EthCfg.EthNICs[0].DNS1.IpV4), _ip_dns->getStdIP().c_str(), _TRUNCATE);
+    strncpy_s(netCfg.EthCfg.EthNICs[0].DNS2.IpV4, sizeof(netCfg.EthCfg.EthNICs[0].DNS2.IpV4), _ip_dns2->getStdIP().c_str(), _TRUNCATE);
+    netCfg.EthCfg.EthNICs[0].EnableDHCP = 0;
+    netCfg.EthCfg.EthNICs[0].EnableAutoDNS = 0;
+
+    GsfSetInfoFn setInfoProc = resolveSetInfoProc();
+    if (setInfoProc == nullptr) {
+        GSF_DEV_SEARCH_UNINIT();
+        return false;
+    }
+
+    int setRet = setInfoProc(&netCfg, TRUE);
+    success = (setRet == 0);
+    if (!success) {
+        qDebug() << "failed to set hisi ip by sdk, ret =" << setRet;
+    }
+    qDebug() << "success to set hisi ip by sdk, ret =";
+    GSF_DEV_SEARCH_UNINIT();
+    return success;
+}
+
 
 void ModifyIP::on_btn_reset_ip_clicked()
 {
-    if(_camType == e_dev_hisi3519){// cgi interface
-        qDebug() << "send login cgi request to camera";
-        CgiClient* client = new CgiClient(NULL);
-
-        connect(client, &CgiClient::requestFinished, this, [](const QByteArray &data){
-            qDebug() << "CGI Response:\n" << data;
-        });
-
-
-        connect(client, &CgiClient::requestError, this, [](const QString &err){
-            qWarning() << "CGI Error:" << err;
-        });
-
-        client->sendLoginRequest("192.168.101.205", "admin", "12345");
-        client->deleteLater();
-        client = NULL;
-        this->close();
-    }
-
-
-
     // check validity
     if(!_ip->isValidIP())
     {
@@ -290,7 +407,7 @@ void ModifyIP::on_btn_reset_ip_clicked()
     std::vector<int> sectionMask = _ip_mask->getSections();
     std::vector<int> sectionGate = _ip_gateway->getSections();
 
-    // check if ip in black ips
+    qDebug() << "try to reset the camera IP. Device IP = "<< _dev_ip << "camera type = " << _camType;
     if(!checkIpSets(sectionMask, black_suffix, sectionIP)){
         promp_error_message(this, "错误：掩码不允许此IP");
         return;
@@ -366,17 +483,30 @@ void ModifyIP::on_btn_reset_ip_clicked()
             promp_error_message(this, "错误：无效密码");
             return;
         }
+        if(!_ip_dns2->isValidIP()){
+            promp_error_message(this, "错误：无效备选DNS");
+            return;
+        }
 
-        _eth.ipaddr = _ip->getIP();
-        _eth.dns1 = _ip_dns->getIP();
-        _eth.dns2 = _ip_dns2->getIP();
-        _eth.netmask = _ip_mask->getIP();
-        _eth.gateway = _ip_gateway->getIP();
+        if(!modifyHisiIpBySearchSdk(name, pwd)){
+            // fallback to old CGI path when sdk doesn't export SET_INFO
+            _eth.ipaddr = _ip->getIP();
+            _eth.dns1 = _ip_dns->getIP();
+            _eth.dns2 = _ip_dns2->getIP();
+            _eth.netmask = _ip_mask->getIP();
+            _eth.gateway = _ip_gateway->getIP();
+            _eth.dhcp = 0;
+            _cgiClient->sendModifyIprequest(_dev_ip, name, pwd, _eth);
+            return;
+        }
 
-        // diable dhcp
-        _eth.dhcp = 0;
-
-        _cgiClient->sendModifyIprequest(_dev_ip, name, pwd, _eth);
+        _ip_sets = IP_SET(_ip->getIP(), _ip_mask->getIP(), _ip_gateway->getIP(), _ip_dns->getIP(), _ip_dns2->getIP());
+        promp_error_message(this, SET_NETCFG_SUCCESS);
+        if(_ip_sets.ip != _dev_ip)
+        {
+            emit(signal_reset_ip2(_ip_sets.ip));
+        }
+        close();
 
     }
 }
